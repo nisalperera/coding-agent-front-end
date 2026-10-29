@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
+import AppHeader from '../../components/AppHeader';
 import { useTheme } from "../../components/ThemeProvider";
 import { useIntegrationSettings } from "../../hooks/useIntegrationSettings";
 
@@ -506,7 +507,13 @@ function DisabledProviderNotice({ children }) {
 }
 
 export default function SettingsPage() {
-    const { signedIn, loginWithGoogle } = useAuth();
+    const auth = useAuth();
+
+    const {
+        signedIn,
+        authLoading,
+        loginWithGoogle,
+    } = auth;
     const { dark, toggleTheme } = useTheme();
     const {
         githubIntegrationEnabled,
@@ -788,669 +795,675 @@ export default function SettingsPage() {
     console.log("Settings:", integrationSettings);
 
     return (
-        <main className="scrollbar-hidden mx-auto min-h-0 w-full max-w-6xl flex-1 overflow-y-auto px-4 py-8 sm:py-10">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                        Account
-                    </p>
-                    <h1 className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">
-                        Settings
-                    </h1>
-                </div>
-                <div className="flex items-center gap-3">
-                    {saved && (
-                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                            Saved locally
-                        </span>
-                    )}
-                    <Link
-                        href="/"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        Back to chat
-                    </Link>
-                </div>
-            </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <AppHeader auth={auth} />
 
-            <div
-                role="tablist"
-                aria-label="Settings sections"
-                className="mb-6 inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900"
-            >
-                <TabButton
-                    active={activeTab === "app"}
-                    tabId="app-settings-tab"
-                    panelId="app-settings-panel"
-                    onClick={() => setActiveTab("app")}
-                >
-                    App Settings
-                </TabButton>
-                <TabButton
-                    active={activeTab === "integrations"}
-                    tabId="integration-settings-tab"
-                    panelId="integration-settings-panel"
-                    onClick={() => setActiveTab("integrations")}
-                >
-                    Integration Settings
-                </TabButton>
-            </div>
-
-            {activeTab === "app" && (
-                <div
-                    id="app-settings-panel"
-                    role="tabpanel"
-                    aria-labelledby="app-settings-tab"
-                    className="space-y-6"
-                >
-                    {!signedIn && (
-                        <section className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-200">
-                            <p className="font-medium">You are not signed in.</p>
-                            <p className="mt-1">
-                                These local preferences still work in this browser. Sign
-                                in to use repository integrations and access your profile.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={loginWithGoogle}
-                                className="mt-3 rounded-lg border border-amber-500/60 px-3 py-1.5 text-xs font-medium transition hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                            >
-                                Sign in with Google
-                            </button>
-                        </section>
-                    )}
-
-                    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800 sm:px-8">
-                            <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">
-                                Appearance
-                            </h2>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Control how the coding-agent interface is displayed.
-                            </p>
-                        </div>
-                        <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                            <Toggle
-                                checked={dark}
-                                label="Dark mode"
-                                description="Use the dark color theme across the coding agent."
-                                onChange={() => toggleTheme()}
-                            />
-                            <Toggle
-                                checked={settings.compactMode}
-                                label="Compact chat layout"
-                                description="Reduce visual spacing in the conversation interface."
-                                onChange={(value) =>
-                                    updateSetting("compactMode", value)
-                                }
-                            />
-                        </div>
-                    </section>
-
-                    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800 sm:px-8">
-                            <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">
-                                Chat behavior
-                            </h2>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Configure interaction behavior for the web coding agent.
-                            </p>
-                        </div>
-                        <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                            <Toggle
-                                checked={settings.sendWithEnter}
-                                label="Send messages with Enter"
-                                description="Use Shift+Enter to add a new line when this option is enabled."
-                                onChange={(value) =>
-                                    updateSetting("sendWithEnter", value)
-                                }
-                            />
-                            <Toggle
-                                checked={settings.streamResponses}
-                                label="Stream agent responses"
-                                description="Show assistant output progressively while it is generated."
-                                onChange={(value) =>
-                                    updateSetting("streamResponses", value)
-                                }
-                            />
-                            <Toggle
-                                checked={settings.showSources}
-                                label="Show retrieval sources"
-                                description="Display codebase or RAG citations with agent responses when available."
-                                onChange={(value) =>
-                                    updateSetting("showSources", value)
-                                }
-                            />
-                        </div>
-                    </section>
-
-                    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800 sm:px-8">
-                            <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">
-                                Agent safety
-                            </h2>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                These options control safeguards for tool-using agent actions.
-                            </p>
-                        </div>
-                        <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                            <Toggle
-                                checked={settings.confirmRiskyActions}
-                                label="Confirm high-impact actions"
-                                description="Require confirmation before actions that modify repositories, send messages, or change external resources."
-                                onChange={(value) =>
-                                    updateSetting("confirmRiskyActions", value)
-                                }
-                            />
-                        </div>
-                    </section>
-
-                    <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+                <main className="scrollbar-hidden mx-auto min-h-0 w-full max-w-6xl flex-1 overflow-y-auto px-4 py-8 sm:py-10">
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                         <div>
-                            <h2 className="text-sm font-semibold text-slate-950 dark:text-slate-50">
-                                Reset local settings
-                            </h2>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Restore the default browser-stored interface preferences.
+                            <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                Account
                             </p>
+                            <h1 className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                                Settings
+                            </h1>
                         </div>
-                        <button
-                            type="button"
-                            onClick={resetSettings}
-                            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                        >
-                            Reset settings
-                        </button>
-                    </section>
-                </div>
-            )}
-
-            {activeTab === "integrations" && (
-                <div
-                    id="integration-settings-panel"
-                    role="tabpanel"
-                    aria-labelledby="integration-settings-tab"
-                    className="space-y-6"
-                >
-                    {!signedIn && (
-                        <section className="rounded-2xl border border-amber-300 bg-amber-50 px-6 py-5 text-sm text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-200 sm:px-8">
-                            <p className="font-semibold">
-                                Sign in before saving integration settings.
-                            </p>
-                            <p className="mt-2 leading-6">
-                                OAuth credentials and LLM API keys can be saved only from
-                                an authenticated session.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={loginWithGoogle}
-                                className="mt-4 rounded-lg border border-amber-500/60 px-3 py-2 text-xs font-medium transition hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                        <div className="flex items-center gap-3">
+                            {saved && (
+                                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                    Saved locally
+                                </span>
+                            )}
+                            <Link
+                                href="/"
+                                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                             >
-                                Sign in with Google
-                            </button>
-                        </section>
+                                Back to chat
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div
+                        role="tablist"
+                        aria-label="Settings sections"
+                        className="mb-6 inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900"
+                    >
+                        <TabButton
+                            active={activeTab === "app"}
+                            tabId="app-settings-tab"
+                            panelId="app-settings-panel"
+                            onClick={() => setActiveTab("app")}
+                        >
+                            App Settings
+                        </TabButton>
+                        <TabButton
+                            active={activeTab === "integrations"}
+                            tabId="integration-settings-tab"
+                            panelId="integration-settings-panel"
+                            onClick={() => setActiveTab("integrations")}
+                        >
+                            Integration Settings
+                        </TabButton>
+                    </div>
+
+                    {activeTab === "app" && (
+                        <div
+                            id="app-settings-panel"
+                            role="tabpanel"
+                            aria-labelledby="app-settings-tab"
+                            className="space-y-6"
+                        >
+                            {!signedIn && (
+                                <section className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-200">
+                                    <p className="font-medium">You are not signed in.</p>
+                                    <p className="mt-1">
+                                        These local preferences still work in this browser. Sign
+                                        in to use repository integrations and access your profile.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={loginWithGoogle}
+                                        className="mt-3 rounded-lg border border-amber-500/60 px-3 py-1.5 text-xs font-medium transition hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                                    >
+                                        Sign in with Google
+                                    </button>
+                                </section>
+                            )}
+
+                            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800 sm:px-8">
+                                    <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">
+                                        Appearance
+                                    </h2>
+                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        Control how the coding-agent interface is displayed.
+                                    </p>
+                                </div>
+                                <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                                    <Toggle
+                                        checked={dark}
+                                        label="Dark mode"
+                                        description="Use the dark color theme across the coding agent."
+                                        onChange={() => toggleTheme()}
+                                    />
+                                    <Toggle
+                                        checked={settings.compactMode}
+                                        label="Compact chat layout"
+                                        description="Reduce visual spacing in the conversation interface."
+                                        onChange={(value) =>
+                                            updateSetting("compactMode", value)
+                                        }
+                                    />
+                                </div>
+                            </section>
+
+                            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800 sm:px-8">
+                                    <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">
+                                        Chat behavior
+                                    </h2>
+                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        Configure interaction behavior for the web coding agent.
+                                    </p>
+                                </div>
+                                <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                                    <Toggle
+                                        checked={settings.sendWithEnter}
+                                        label="Send messages with Enter"
+                                        description="Use Shift+Enter to add a new line when this option is enabled."
+                                        onChange={(value) =>
+                                            updateSetting("sendWithEnter", value)
+                                        }
+                                    />
+                                    <Toggle
+                                        checked={settings.streamResponses}
+                                        label="Stream agent responses"
+                                        description="Show assistant output progressively while it is generated."
+                                        onChange={(value) =>
+                                            updateSetting("streamResponses", value)
+                                        }
+                                    />
+                                    <Toggle
+                                        checked={settings.showSources}
+                                        label="Show retrieval sources"
+                                        description="Display codebase or RAG citations with agent responses when available."
+                                        onChange={(value) =>
+                                            updateSetting("showSources", value)
+                                        }
+                                    />
+                                </div>
+                            </section>
+
+                            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800 sm:px-8">
+                                    <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">
+                                        Agent safety
+                                    </h2>
+                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        These options control safeguards for tool-using agent actions.
+                                    </p>
+                                </div>
+                                <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                                    <Toggle
+                                        checked={settings.confirmRiskyActions}
+                                        label="Confirm high-impact actions"
+                                        description="Require confirmation before actions that modify repositories, send messages, or change external resources."
+                                        onChange={(value) =>
+                                            updateSetting("confirmRiskyActions", value)
+                                        }
+                                    />
+                                </div>
+                            </section>
+
+                            <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                                <div>
+                                    <h2 className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                                        Reset local settings
+                                    </h2>
+                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        Restore the default browser-stored interface preferences.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={resetSettings}
+                                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                >
+                                    Reset settings
+                                </button>
+                            </section>
+                        </div>
                     )}
 
-                    <div className="space-y-6">
-                        <IntegrationCard
-                            title="GitHub"
-                            description="Configure GitHub OAuth and repository access permissions."
+                    {activeTab === "integrations" && (
+                        <div
+                            id="integration-settings-panel"
+                            role="tabpanel"
+                            aria-labelledby="integration-settings-tab"
+                            className="space-y-6"
                         >
-                            <Toggle
-                                checked={githubIntegrationEnabled}
-                                label="Enable GitHub integration"
-                                description="Allow repository-aware features through GitHub."
-                                onChange={setGitHubIntegrationEnabled}
-                                disabled={integrationFormDisabled}
-                            />
-                            {!githubIntegrationEnabled && (
-                                <DisabledProviderNotice>
-                                    Enable GitHub integration to edit its OAuth configuration.
-                                </DisabledProviderNotice>
+                            {!signedIn && (
+                                <section className="rounded-2xl border border-amber-300 bg-amber-50 px-6 py-5 text-sm text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/25 dark:text-amber-200 sm:px-8">
+                                    <p className="font-semibold">
+                                        Sign in before saving integration settings.
+                                    </p>
+                                    <p className="mt-2 leading-6">
+                                        OAuth credentials and LLM API keys can be saved only from
+                                        an authenticated session.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={loginWithGoogle}
+                                        className="mt-4 rounded-lg border border-amber-500/60 px-3 py-2 text-xs font-medium transition hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                                    >
+                                        Sign in with Google
+                                    </button>
+                                </section>
                             )}
-                            <fieldset
-                                disabled={githubSettingsDisabled}
-                                className="space-y-5 rounded-xl border border-slate-200 p-4 transition-opacity disabled:opacity-50 dark:border-slate-800"
-                            >
-                                <legend className="sr-only">
-                                    GitHub integration configuration
-                                </legend>
-                                <TextField
-                                    id="github-base-url"
-                                    label="GitHub base URL"
-                                    description="Use github.com or your GitHub Enterprise Server URL."
-                                    type="url"
-                                    value={integrationSettings.github.baseUrl}
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "github",
-                                            "baseUrl",
-                                            value,
-                                        )
-                                    }
-                                    placeholder="https://github.com"
-                                    disabled={githubSettingsDisabled}
-                                />
-                                <div className="space-y-2">
-                                    <TextField
-                                        id="github-client-id"
-                                        label="OAuth client ID"
-                                        description={
-                                            integrationSettings.github.clientIdConfigured
-                                                ? "A client ID is configured. Enter a value only to replace it."
-                                                : "Enter the GitHub OAuth client ID."
-                                        }
-                                        value={integrationSettings.github.clientId}
-                                        onChange={(value) =>
-                                            updateIntegrationSetting(
-                                                "github",
-                                                "clientId",
-                                                value,
-                                            )
-                                        }
-                                        placeholder={
-                                            integrationSettings.github.clientIdConfigured
-                                                ? "Configured. Enter a new value to replace it."
-                                                : "GitHub OAuth client ID"
-                                        }
-                                        disabled={githubSettingsDisabled}
-                                    />
-                                    <ConfiguredStatus
-                                        configured={
-                                            integrationSettings.github
-                                                .clientIdConfigured
-                                        }
-                                    >
-                                        Client ID configured on the server.
-                                    </ConfiguredStatus>
-                                </div>
-                                <div className="space-y-2">
-                                    <TextField
-                                        id="github-client-secret"
-                                        label="OAuth client secret"
-                                        description={
-                                            integrationSettings.github
-                                                .clientSecretConfigured
-                                                ? "A secret is configured. Leave blank to keep it, or enter a value to replace it."
-                                                : "Stored securely by the backend and never persisted in browser storage."
-                                        }
-                                        type="password"
-                                        value={
-                                            integrationSettings.github.clientSecret
-                                        }
-                                        onChange={(value) =>
-                                            updateIntegrationSetting(
-                                                "github",
-                                                "clientSecret",
-                                                value,
-                                            )
-                                        }
-                                        placeholder={
-                                            integrationSettings.github
-                                                .clientSecretConfigured
-                                                ? "Configured. Enter a new value to replace it."
-                                                : "GitHub OAuth client secret"
-                                        }
-                                        disabled={githubSettingsDisabled}
-                                    />
-                                    <ConfiguredStatus
-                                        configured={
-                                            integrationSettings.github
-                                                .clientSecretConfigured
-                                        }
-                                    >
-                                        Client secret configured on the server.
-                                    </ConfiguredStatus>
-                                </div>
-                                <MultiSelectField
-                                    id="github-scopes"
-                                    label="OAuth scopes"
-                                    description="Choose only the permissions required by the integration."
-                                    value={integrationSettings.github.scopes}
-                                    options={GITHUB_SCOPE_OPTIONS}
-                                    onChange={(scopes) =>
-                                        updateIntegrationSetting(
-                                            "github",
-                                            "scopes",
-                                            scopes,
-                                        )
-                                    }
-                                    disabled={githubSettingsDisabled}
-                                />
-                            </fieldset>
-                        </IntegrationCard>
 
-                        <IntegrationCard
-                            title="GitLab"
-                            description="Configure GitLab OAuth and repository access permissions."
-                        >
-                            <Toggle
-                                checked={gitlabIntegrationEnabled}
-                                label="Enable GitLab integration"
-                                description="Allow repository-aware features through GitLab."
-                                onChange={setGitLabIntegrationEnabled}
-                                disabled={integrationFormDisabled}
-                            />
-                            {!gitlabIntegrationEnabled && (
-                                <DisabledProviderNotice>
-                                    Enable GitLab integration to edit its OAuth configuration.
-                                </DisabledProviderNotice>
-                            )}
-                            <fieldset
-                                disabled={gitlabSettingsDisabled}
-                                className="space-y-5 rounded-xl border border-slate-200 p-4 transition-opacity disabled:opacity-50 dark:border-slate-800"
-                            >
-                                <legend className="sr-only">
-                                    GitLab integration configuration
-                                </legend>
-                                <TextField
-                                    id="gitlab-base-url"
-                                    label="GitLab base URL"
-                                    description="Use gitlab.com or your self-managed GitLab URL."
-                                    type="url"
-                                    value={integrationSettings.gitlab.baseUrl}
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "gitlab",
-                                            "baseUrl",
-                                            value,
-                                        )
-                                    }
-                                    placeholder="https://gitlab.com"
-                                    disabled={gitlabSettingsDisabled}
-                                />
-                                <div className="space-y-2">
-                                    <TextField
-                                        id="gitlab-client-id"
-                                        label="OAuth application ID"
-                                        description={
-                                            integrationSettings.gitlab.clientIdConfigured
-                                                ? "An application ID is configured. Enter a value only to replace it."
-                                                : "Enter the GitLab OAuth application ID."
-                                        }
-                                        value={integrationSettings.gitlab.clientId}
-                                        onChange={(value) =>
-                                            updateIntegrationSetting(
-                                                "gitlab",
-                                                "clientId",
-                                                value,
-                                            )
-                                        }
-                                        placeholder={
-                                            integrationSettings.gitlab.clientIdConfigured
-                                                ? "Configured. Enter a new value to replace it."
-                                                : "GitLab application ID"
-                                        }
-                                        disabled={gitlabSettingsDisabled}
+                            <div className="space-y-6">
+                                <IntegrationCard
+                                    title="GitHub"
+                                    description="Configure GitHub OAuth and repository access permissions."
+                                >
+                                    <Toggle
+                                        checked={githubIntegrationEnabled}
+                                        label="Enable GitHub integration"
+                                        description="Allow repository-aware features through GitHub."
+                                        onChange={setGitHubIntegrationEnabled}
+                                        disabled={integrationFormDisabled}
                                     />
-                                    <ConfiguredStatus
-                                        configured={
-                                            integrationSettings.gitlab
-                                                .clientIdConfigured
-                                        }
+                                    {!githubIntegrationEnabled && (
+                                        <DisabledProviderNotice>
+                                            Enable GitHub integration to edit its OAuth configuration.
+                                        </DisabledProviderNotice>
+                                    )}
+                                    <fieldset
+                                        disabled={githubSettingsDisabled}
+                                        className="space-y-5 rounded-xl border border-slate-200 p-4 transition-opacity disabled:opacity-50 dark:border-slate-800"
                                     >
-                                        Application ID configured on the server.
-                                    </ConfiguredStatus>
-                                </div>
-                                <div className="space-y-2">
-                                    <TextField
-                                        id="gitlab-client-secret"
-                                        label="OAuth secret"
-                                        description={
-                                            integrationSettings.gitlab
-                                                .clientSecretConfigured
-                                                ? "A secret is configured. Leave blank to keep it, or enter a value to replace it."
-                                                : "Stored securely by the backend and never persisted in browser storage."
-                                        }
-                                        type="password"
-                                        value={
-                                            integrationSettings.gitlab.clientSecret
-                                        }
-                                        onChange={(value) =>
-                                            updateIntegrationSetting(
-                                                "gitlab",
-                                                "clientSecret",
-                                                value,
-                                            )
-                                        }
-                                        placeholder={
-                                            integrationSettings.gitlab
-                                                .clientSecretConfigured
-                                                ? "Configured. Enter a new value to replace it."
-                                                : "GitLab OAuth secret"
-                                        }
-                                        disabled={gitlabSettingsDisabled}
-                                    />
-                                    <ConfiguredStatus
-                                        configured={
-                                            integrationSettings.gitlab
-                                                .clientSecretConfigured
-                                        }
-                                    >
-                                        OAuth secret configured on the server.
-                                    </ConfiguredStatus>
-                                </div>
-                                <MultiSelectField
-                                    id="gitlab-scopes"
-                                    label="OAuth scopes"
-                                    description="Choose only the permissions required by the integration."
-                                    value={integrationSettings.gitlab.scopes}
-                                    options={GITLAB_SCOPE_OPTIONS}
-                                    onChange={(scopes) =>
-                                        updateIntegrationSetting(
-                                            "gitlab",
-                                            "scopes",
-                                            scopes,
-                                        )
-                                    }
-                                    disabled={gitlabSettingsDisabled}
-                                />
-                            </fieldset>
-                        </IntegrationCard>
+                                        <legend className="sr-only">
+                                            GitHub integration configuration
+                                        </legend>
+                                        <TextField
+                                            id="github-base-url"
+                                            label="GitHub base URL"
+                                            description="Use github.com or your GitHub Enterprise Server URL."
+                                            type="url"
+                                            value={integrationSettings.github.baseUrl}
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "github",
+                                                    "baseUrl",
+                                                    value,
+                                                )
+                                            }
+                                            placeholder="https://github.com"
+                                            disabled={githubSettingsDisabled}
+                                        />
+                                        <div className="space-y-2">
+                                            <TextField
+                                                id="github-client-id"
+                                                label="OAuth client ID"
+                                                description={
+                                                    integrationSettings.github.clientIdConfigured
+                                                        ? "A client ID is configured. Enter a value only to replace it."
+                                                        : "Enter the GitHub OAuth client ID."
+                                                }
+                                                value={integrationSettings.github.clientId}
+                                                onChange={(value) =>
+                                                    updateIntegrationSetting(
+                                                        "github",
+                                                        "clientId",
+                                                        value,
+                                                    )
+                                                }
+                                                placeholder={
+                                                    integrationSettings.github.clientIdConfigured
+                                                        ? "Configured. Enter a new value to replace it."
+                                                        : "GitHub OAuth client ID"
+                                                }
+                                                disabled={githubSettingsDisabled}
+                                            />
+                                            <ConfiguredStatus
+                                                configured={
+                                                    integrationSettings.github
+                                                        .clientIdConfigured
+                                                }
+                                            >
+                                                Client ID configured on the server.
+                                            </ConfiguredStatus>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <TextField
+                                                id="github-client-secret"
+                                                label="OAuth client secret"
+                                                description={
+                                                    integrationSettings.github
+                                                        .clientSecretConfigured
+                                                        ? "A secret is configured. Leave blank to keep it, or enter a value to replace it."
+                                                        : "Stored securely by the backend and never persisted in browser storage."
+                                                }
+                                                type="password"
+                                                value={
+                                                    integrationSettings.github.clientSecret
+                                                }
+                                                onChange={(value) =>
+                                                    updateIntegrationSetting(
+                                                        "github",
+                                                        "clientSecret",
+                                                        value,
+                                                    )
+                                                }
+                                                placeholder={
+                                                    integrationSettings.github
+                                                        .clientSecretConfigured
+                                                        ? "Configured. Enter a new value to replace it."
+                                                        : "GitHub OAuth client secret"
+                                                }
+                                                disabled={githubSettingsDisabled}
+                                            />
+                                            <ConfiguredStatus
+                                                configured={
+                                                    integrationSettings.github
+                                                        .clientSecretConfigured
+                                                }
+                                            >
+                                                Client secret configured on the server.
+                                            </ConfiguredStatus>
+                                        </div>
+                                        <MultiSelectField
+                                            id="github-scopes"
+                                            label="OAuth scopes"
+                                            description="Choose only the permissions required by the integration."
+                                            value={integrationSettings.github.scopes}
+                                            options={GITHUB_SCOPE_OPTIONS}
+                                            onChange={(scopes) =>
+                                                updateIntegrationSetting(
+                                                    "github",
+                                                    "scopes",
+                                                    scopes,
+                                                )
+                                            }
+                                            disabled={githubSettingsDisabled}
+                                        />
+                                    </fieldset>
+                                </IntegrationCard>
 
-                        <IntegrationCard
-                            title="LLM endpoint"
-                            description="Configure the model endpoint used by the coding agent."
-                        >
-                            <Toggle
-                                checked={integrationSettings.llm.enabled}
-                                label="Enable custom LLM endpoint"
-                                description="Use an externally configured LLM provider or self-hosted endpoint."
-                                onChange={(value) =>
-                                    updateIntegrationSetting(
-                                        "llm",
-                                        "enabled",
-                                        value,
-                                    )
-                                }
-                                disabled={integrationFormDisabled}
-                            />
-                            {!integrationSettings.llm.enabled && (
-                                <DisabledProviderNotice>
-                                    Enable the custom LLM endpoint to edit its provider configuration.
-                                </DisabledProviderNotice>
-                            )}
-                            <fieldset
-                                disabled={llmSettingsDisabled}
-                                className="space-y-5 rounded-xl border border-slate-200 p-4 transition-opacity disabled:opacity-50 dark:border-slate-800"
-                            >
-                                <legend className="sr-only">
-                                    LLM endpoint configuration
-                                </legend>
-                                <TextField
-                                    id="llm-provider-name"
-                                    label="Provider name"
-                                    value={integrationSettings.llm.providerName}
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "llm",
-                                            "providerName",
-                                            value,
-                                        )
-                                    }
-                                    placeholder="OpenAI, Anthropic, Ollama, vLLM, or custom"
-                                    disabled={llmSettingsDisabled}
-                                />
-                                <TextField
-                                    id="llm-endpoint-url"
-                                    label="Endpoint URL"
-                                    type="url"
-                                    value={integrationSettings.llm.endpointUrl}
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "llm",
-                                            "endpointUrl",
-                                            value,
-                                        )
-                                    }
-                                    placeholder="https://api.example.com/v1"
-                                    disabled={llmSettingsDisabled}
-                                />
-                                <TextField
-                                    id="llm-model"
-                                    label="Model ID"
-                                    value={integrationSettings.llm.model}
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "llm",
-                                            "model",
-                                            value,
-                                        )
-                                    }
-                                    placeholder="model-name-or-deployment-id"
-                                    disabled={llmSettingsDisabled}
-                                />
-                                <div className="space-y-2">
-                                    <TextField
-                                        id="llm-api-key"
-                                        label="API key"
-                                        description={
-                                            integrationSettings.llm.apiKeyConfigured
-                                                ? "An API key is configured. Leave blank to keep it, or enter a value to replace it."
-                                                : "Stored securely by the backend and never persisted in browser storage."
-                                        }
-                                        type="password"
-                                        value={integrationSettings.llm.apiKey}
+                                <IntegrationCard
+                                    title="GitLab"
+                                    description="Configure GitLab OAuth and repository access permissions."
+                                >
+                                    <Toggle
+                                        checked={gitlabIntegrationEnabled}
+                                        label="Enable GitLab integration"
+                                        description="Allow repository-aware features through GitLab."
+                                        onChange={setGitLabIntegrationEnabled}
+                                        disabled={integrationFormDisabled}
+                                    />
+                                    {!gitlabIntegrationEnabled && (
+                                        <DisabledProviderNotice>
+                                            Enable GitLab integration to edit its OAuth configuration.
+                                        </DisabledProviderNotice>
+                                    )}
+                                    <fieldset
+                                        disabled={gitlabSettingsDisabled}
+                                        className="space-y-5 rounded-xl border border-slate-200 p-4 transition-opacity disabled:opacity-50 dark:border-slate-800"
+                                    >
+                                        <legend className="sr-only">
+                                            GitLab integration configuration
+                                        </legend>
+                                        <TextField
+                                            id="gitlab-base-url"
+                                            label="GitLab base URL"
+                                            description="Use gitlab.com or your self-managed GitLab URL."
+                                            type="url"
+                                            value={integrationSettings.gitlab.baseUrl}
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "gitlab",
+                                                    "baseUrl",
+                                                    value,
+                                                )
+                                            }
+                                            placeholder="https://gitlab.com"
+                                            disabled={gitlabSettingsDisabled}
+                                        />
+                                        <div className="space-y-2">
+                                            <TextField
+                                                id="gitlab-client-id"
+                                                label="OAuth application ID"
+                                                description={
+                                                    integrationSettings.gitlab.clientIdConfigured
+                                                        ? "An application ID is configured. Enter a value only to replace it."
+                                                        : "Enter the GitLab OAuth application ID."
+                                                }
+                                                value={integrationSettings.gitlab.clientId}
+                                                onChange={(value) =>
+                                                    updateIntegrationSetting(
+                                                        "gitlab",
+                                                        "clientId",
+                                                        value,
+                                                    )
+                                                }
+                                                placeholder={
+                                                    integrationSettings.gitlab.clientIdConfigured
+                                                        ? "Configured. Enter a new value to replace it."
+                                                        : "GitLab application ID"
+                                                }
+                                                disabled={gitlabSettingsDisabled}
+                                            />
+                                            <ConfiguredStatus
+                                                configured={
+                                                    integrationSettings.gitlab
+                                                        .clientIdConfigured
+                                                }
+                                            >
+                                                Application ID configured on the server.
+                                            </ConfiguredStatus>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <TextField
+                                                id="gitlab-client-secret"
+                                                label="OAuth secret"
+                                                description={
+                                                    integrationSettings.gitlab
+                                                        .clientSecretConfigured
+                                                        ? "A secret is configured. Leave blank to keep it, or enter a value to replace it."
+                                                        : "Stored securely by the backend and never persisted in browser storage."
+                                                }
+                                                type="password"
+                                                value={
+                                                    integrationSettings.gitlab.clientSecret
+                                                }
+                                                onChange={(value) =>
+                                                    updateIntegrationSetting(
+                                                        "gitlab",
+                                                        "clientSecret",
+                                                        value,
+                                                    )
+                                                }
+                                                placeholder={
+                                                    integrationSettings.gitlab
+                                                        .clientSecretConfigured
+                                                        ? "Configured. Enter a new value to replace it."
+                                                        : "GitLab OAuth secret"
+                                                }
+                                                disabled={gitlabSettingsDisabled}
+                                            />
+                                            <ConfiguredStatus
+                                                configured={
+                                                    integrationSettings.gitlab
+                                                        .clientSecretConfigured
+                                                }
+                                            >
+                                                OAuth secret configured on the server.
+                                            </ConfiguredStatus>
+                                        </div>
+                                        <MultiSelectField
+                                            id="gitlab-scopes"
+                                            label="OAuth scopes"
+                                            description="Choose only the permissions required by the integration."
+                                            value={integrationSettings.gitlab.scopes}
+                                            options={GITLAB_SCOPE_OPTIONS}
+                                            onChange={(scopes) =>
+                                                updateIntegrationSetting(
+                                                    "gitlab",
+                                                    "scopes",
+                                                    scopes,
+                                                )
+                                            }
+                                            disabled={gitlabSettingsDisabled}
+                                        />
+                                    </fieldset>
+                                </IntegrationCard>
+
+                                <IntegrationCard
+                                    title="LLM endpoint"
+                                    description="Configure the model endpoint used by the coding agent."
+                                >
+                                    <Toggle
+                                        checked={integrationSettings.llm.enabled}
+                                        label="Enable custom LLM endpoint"
+                                        description="Use an externally configured LLM provider or self-hosted endpoint."
                                         onChange={(value) =>
                                             updateIntegrationSetting(
                                                 "llm",
-                                                "apiKey",
+                                                "enabled",
                                                 value,
                                             )
                                         }
-                                        placeholder={
-                                            integrationSettings.llm.apiKeyConfigured
-                                                ? "Configured. Enter a new value to replace it."
-                                                : "LLM provider API key"
-                                        }
-                                        disabled={llmSettingsDisabled}
+                                        disabled={integrationFormDisabled}
                                     />
-                                    <ConfiguredStatus
-                                        configured={
-                                            integrationSettings.llm.apiKeyConfigured
-                                        }
+                                    {!integrationSettings.llm.enabled && (
+                                        <DisabledProviderNotice>
+                                            Enable the custom LLM endpoint to edit its provider configuration.
+                                        </DisabledProviderNotice>
+                                    )}
+                                    <fieldset
+                                        disabled={llmSettingsDisabled}
+                                        className="space-y-5 rounded-xl border border-slate-200 p-4 transition-opacity disabled:opacity-50 dark:border-slate-800"
                                     >
-                                        API key configured on the server.
-                                    </ConfiguredStatus>
-                                </div>
-                                <TextField
-                                    id="llm-temperature"
-                                    label="Temperature"
-                                    description="Controls output variability, from 0 to 2."
-                                    type="number"
-                                    min="0"
-                                    max="2"
-                                    step="0.1"
-                                    value={integrationSettings.llm.temperature}
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "llm",
-                                            "temperature",
-                                            Number(value),
-                                        )
-                                    }
-                                    disabled={llmSettingsDisabled}
-                                />
-                                <TextField
-                                    id="llm-max-tokens"
-                                    label="Maximum output tokens"
-                                    type="number"
-                                    min="1"
-                                    step="1"
-                                    value={integrationSettings.llm.maxTokens}
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "llm",
-                                            "maxTokens",
-                                            Number(value),
-                                        )
-                                    }
-                                    disabled={llmSettingsDisabled}
-                                />
-                                <Toggle
-                                    checked={
-                                        integrationSettings.llm.streamResponses
-                                    }
-                                    label="Stream responses"
-                                    description="Show model output progressively while it is generated."
-                                    onChange={(value) =>
-                                        updateIntegrationSetting(
-                                            "llm",
-                                            "streamResponses",
-                                            value,
-                                        )
-                                    }
-                                    disabled={llmSettingsDisabled}
-                                />
-                            </fieldset>
-                        </IntegrationCard>
-                    </div>
-
-                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-8">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h2 className="text-sm font-semibold text-slate-950 dark:text-slate-50">
-                                    Save integration settings
-                                </h2>
-                                <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                    Settings are saved to your authenticated account.
-                                </p>
+                                        <legend className="sr-only">
+                                            LLM endpoint configuration
+                                        </legend>
+                                        <TextField
+                                            id="llm-provider-name"
+                                            label="Provider name"
+                                            value={integrationSettings.llm.providerName}
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "llm",
+                                                    "providerName",
+                                                    value,
+                                                )
+                                            }
+                                            placeholder="OpenAI, Anthropic, Ollama, vLLM, or custom"
+                                            disabled={llmSettingsDisabled}
+                                        />
+                                        <TextField
+                                            id="llm-endpoint-url"
+                                            label="Endpoint URL"
+                                            type="url"
+                                            value={integrationSettings.llm.endpointUrl}
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "llm",
+                                                    "endpointUrl",
+                                                    value,
+                                                )
+                                            }
+                                            placeholder="https://api.example.com/v1"
+                                            disabled={llmSettingsDisabled}
+                                        />
+                                        <TextField
+                                            id="llm-model"
+                                            label="Model ID"
+                                            value={integrationSettings.llm.model}
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "llm",
+                                                    "model",
+                                                    value,
+                                                )
+                                            }
+                                            placeholder="model-name-or-deployment-id"
+                                            disabled={llmSettingsDisabled}
+                                        />
+                                        <div className="space-y-2">
+                                            <TextField
+                                                id="llm-api-key"
+                                                label="API key"
+                                                description={
+                                                    integrationSettings.llm.apiKeyConfigured
+                                                        ? "An API key is configured. Leave blank to keep it, or enter a value to replace it."
+                                                        : "Stored securely by the backend and never persisted in browser storage."
+                                                }
+                                                type="password"
+                                                value={integrationSettings.llm.apiKey}
+                                                onChange={(value) =>
+                                                    updateIntegrationSetting(
+                                                        "llm",
+                                                        "apiKey",
+                                                        value,
+                                                    )
+                                                }
+                                                placeholder={
+                                                    integrationSettings.llm.apiKeyConfigured
+                                                        ? "Configured. Enter a new value to replace it."
+                                                        : "LLM provider API key"
+                                                }
+                                                disabled={llmSettingsDisabled}
+                                            />
+                                            <ConfiguredStatus
+                                                configured={
+                                                    integrationSettings.llm.apiKeyConfigured
+                                                }
+                                            >
+                                                API key configured on the server.
+                                            </ConfiguredStatus>
+                                        </div>
+                                        <TextField
+                                            id="llm-temperature"
+                                            label="Temperature"
+                                            description="Controls output variability, from 0 to 2."
+                                            type="number"
+                                            min="0"
+                                            max="2"
+                                            step="0.1"
+                                            value={integrationSettings.llm.temperature}
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "llm",
+                                                    "temperature",
+                                                    Number(value),
+                                                )
+                                            }
+                                            disabled={llmSettingsDisabled}
+                                        />
+                                        <TextField
+                                            id="llm-max-tokens"
+                                            label="Maximum output tokens"
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            value={integrationSettings.llm.maxTokens}
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "llm",
+                                                    "maxTokens",
+                                                    Number(value),
+                                                )
+                                            }
+                                            disabled={llmSettingsDisabled}
+                                        />
+                                        <Toggle
+                                            checked={
+                                                integrationSettings.llm.streamResponses
+                                            }
+                                            label="Stream responses"
+                                            description="Show model output progressively while it is generated."
+                                            onChange={(value) =>
+                                                updateIntegrationSetting(
+                                                    "llm",
+                                                    "streamResponses",
+                                                    value,
+                                                )
+                                            }
+                                            disabled={llmSettingsDisabled}
+                                        />
+                                    </fieldset>
+                                </IntegrationCard>
                             </div>
-                            <button
-                                type="button"
-                                onClick={saveIntegrationSettings}
-                                disabled={integrationFormDisabled}
-                                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-slate-900"
-                            >
-                                {integrationSettingsSaving
-                                    ? "Saving..."
-                                    : "Save integration settings"}
-                            </button>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h2 className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                                            Save integration settings
+                                        </h2>
+                                        <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                            Settings are saved to your authenticated account.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={saveIntegrationSettings}
+                                        disabled={integrationFormDisabled}
+                                        className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-slate-900"
+                                    >
+                                        {integrationSettingsSaving
+                                            ? "Saving..."
+                                            : "Save integration settings"}
+                                    </button>
+                                </div>
+                                {integrationSettingsLoading && (
+                                    <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                                        Loading saved integration settings...
+                                    </p>
+                                )}
+                                {integrationSettingsSaved && (
+                                    <p
+                                        role="status"
+                                        className="mt-4 text-sm font-medium text-emerald-600 dark:text-emerald-400"
+                                    >
+                                        Integration settings saved successfully.
+                                    </p>
+                                )}
+                                {integrationSettingsError && (
+                                    <p
+                                        role="alert"
+                                        className="mt-4 text-sm font-medium text-red-600 dark:text-red-400"
+                                    >
+                                        {integrationSettingsError}
+                                    </p>
+                                )}
+                            </section>
                         </div>
-                        {integrationSettingsLoading && (
-                            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-                                Loading saved integration settings...
-                            </p>
-                        )}
-                        {integrationSettingsSaved && (
-                            <p
-                                role="status"
-                                className="mt-4 text-sm font-medium text-emerald-600 dark:text-emerald-400"
-                            >
-                                Integration settings saved successfully.
-                            </p>
-                        )}
-                        {integrationSettingsError && (
-                            <p
-                                role="alert"
-                                className="mt-4 text-sm font-medium text-red-600 dark:text-red-400"
-                            >
-                                {integrationSettingsError}
-                            </p>
-                        )}
-                    </section>
-                </div>
-            )}
-        </main>
+                    )}
+                </main>
+            </div>
+        </div>
     );
 }

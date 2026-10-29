@@ -1,2 +1,18 @@
+import { notFound } from 'next/navigation';
 import ProjectDetails from '../../../../components/projects/ProjectDetails';
-export default function Page({ params }) { return <ProjectDetails key={params.projectId} projectId={params.projectId} settings />; }
+
+export default async function Page({ params }) {
+    const { projectId } = await params;
+
+    if (typeof projectId !== 'string' || !projectId.trim()) {
+        notFound();
+    }
+
+    return (
+        <ProjectDetails
+            key={projectId}
+            projectId={projectId}
+            settings
+        />
+    );
+}

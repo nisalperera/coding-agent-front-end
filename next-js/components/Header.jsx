@@ -45,27 +45,29 @@ export default function Header({
                         className="h-8 w-8 shrink-0 rounded-lg object-cover"
                     />
 
-                    <button
-                        type="button"
-                        aria-label="Open conversation history"
-                        onClick={onOpenConversationSidebar}
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 md:hidden"
-                    >
-                        <svg
-                            aria-hidden="true"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            className="h-5 w-5"
+                    {typeof onOpenConversationSidebar === 'function' && (
+                        <button
+                            type="button"
+                            aria-label="Open conversation history"
+                            onClick={onOpenConversationSidebar}
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 md:hidden"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M4 6h16M4 12h16M4 18h16"
-                            />
-                        </svg>
-                    </button>
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                className="h-5 w-5"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                            </svg>
+                        </button>
+                    )}
 
                     <div className="min-w-0">
                         <h1 className="truncate text-sm font-semibold leading-tight">
